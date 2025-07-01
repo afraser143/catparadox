@@ -35,16 +35,16 @@
             width: 50px;
             height: 50px;
             position: absolute;
-            background-color: #f8f9fa;
-            border-radius: 25px;
+            background-color: transparent;
             cursor: pointer;
             transition: transform 0.3s;
             user-select: none;
+            z-index: 2;
         }
         
         #cat::before {
             content: "🐱";
-            font-size: 30px;
+            font-size: 40px;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -52,7 +52,7 @@
         }
         
         #cat.quantum {
-            box-shadow: 0 0 10px #9d4edd;
+            filter: drop-shadow(0 0 8px #9d4edd);
         }
         
         #score {
@@ -81,12 +81,30 @@
             background-color: #7b2cbf;
         }
         
-        .box {
-            width: 60px;
-            height: 60px;
+        .rat {
+            width: 40px;
+            height: 40px;
             position: absolute;
-            border: 2px dashed #4a4e69;
-            border-radius: 5px;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: scurry 0.5s infinite alternate;
+        }
+        
+        .rat::before {
+            content: "🐀";
+            font-size: 30px;
+            transform: scaleX(-1); /* Make rat face left */
+        }
+        
+        @keyframes scurry {
+            from {
+                transform: translateX(-2px);
+            }
+            to {
+                transform: translateX(2px);
+            }
         }
         
         #gameOver {
@@ -99,13 +117,14 @@
             padding: 20px;
             border-radius: 10px;
             text-align: center;
+            z-index: 3;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <h1>Cat Paradox</h1>
-        <p>Guide the quantum cat into the box... or boxes?</p>
+        <p>Drag the cat to catch the rats!</p>
         <div id="gameArea">
             <div id="cat"></div>
             <div id="gameOver">
@@ -129,7 +148,7 @@
         let score = 0;
         let timeLeft = 60;
         let gameInterval;
-        let boxes = [];
+        let rats = [];
         let isDragging = false;
         let isQuantum = false;
         let timer;
@@ -142,9 +161,9 @@
             timerDisplay.textContent = `Time: ${timeLeft}s`;
             gameOverScreen.style.display = 'none';
             
-            // Clear existing boxes
-            boxes.forEach(box => box.remove());
-            boxes = [];
+            // Clear existing rats
+            rats.forEach(rat => rat.remove());
+            rats = [];
             
             // Reset cat position
             cat.style.left = '275px';
@@ -152,7 +171,7 @@
             
             // Start game loop
             clearInterval(gameInterval);
-            gameInterval = setInterval(createBox, 3000);
+            gameInterval = setInterval(createRat, 2000);
             
             // Start timer
             clearInterval(timer);
@@ -166,44 +185,44 @@
             }, 1000);
         }
 
-        function createBox() {
-            const box = document.createElement('div');
-            box.className = 'box';
+        function createRat() {
+            const rat = document.createElement('div');
+            rat.className = 'rat';
             
             // Random position within game area
-            const maxX = gameArea.clientWidth - 60;
-            const maxY = gameArea.clientHeight - 60;
+            const maxX = gameArea.clientWidth - 40;
+            const maxY = gameArea.clientHeight - 40;
             const randomX = Math.random() * maxX;
             const randomY = Math.random() * maxY;
             
-            box.style.left = `${randomX}px`;
-            box.style.top = `${randomY}px`;
+            rat.style.left = `${randomX}px`;
+            rat.style.top = `${randomY}px`;
             
-            gameArea.appendChild(box);
-            boxes.push(box);
+            gameArea.appendChild(rat);
+            rats.push(rat);
             
-            // Remove box after 5 seconds
+            // Remove rat after 5 seconds
             setTimeout(() => {
-                box.remove();
-                boxes = boxes.filter(b => b !== box);
+                rat.remove();
+                rats = rats.filter(r => r !== rat);
             }, 5000);
         }
 
-        function checkCollision(cat, box) {
+        function checkCollision(cat, rat) {
             const catRect = cat.getBoundingClientRect();
-            const boxRect = box.getBoundingClientRect();
+            const ratRect = rat.getBoundingClientRect();
             
-            return !(catRect.right < boxRect.left || 
-                    catRect.left > boxRect.right || 
-                    catRect.bottom < boxRect.top || 
-                    catRect.top > boxRect.bottom);
+            return !(catRect.right < ratRect.left || 
+                    catRect.left > ratRect.right || 
+                    catRect.bottom < ratRect.top || 
+                    catRect.top > ratRect.bottom);
         }
 
         function endGame() {
             clearInterval(gameInterval);
             clearInterval(timer);
             gameOverScreen.style.display = 'block';
-            document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+            document.getElementById('finalScore').textContent = `Final Score: ${score} rats caught!`;
         }
 
         // Cat dragging mechanics
@@ -229,13 +248,13 @@
                 cat.style.left = `${x}px`;
                 cat.style.top = `${y}px`;
                 
-                // Check for collision with boxes
-                boxes.forEach(box => {
-                    if (checkCollision(cat, box)) {
+                // Check for collision with rats
+                rats.forEach(rat => {
+                    if (checkCollision(cat, rat)) {
                         score += isQuantum ? 2 : 1;
                         scoreDisplay.textContent = `Score: ${score}`;
-                        box.remove();
-                        boxes = boxes.filter(b => b !== box);
+                        rat.remove();
+                        rats = rats.filter(r => r !== rat);
                     }
                 });
             }
@@ -248,3 +267,4 @@
     </script>
 </body>
 </html>
+
