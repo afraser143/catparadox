@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Paradox</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom right, #1a1a2e, #16213e);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        #gameContainer {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #gameArea {
+            width: 600px;
+            height: 400px;
+            border: 2px solid #4a4e69;
+            background-color: #22223b;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #cat {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            background-color: #f8f9fa;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            user-select: none;
+        }
+        
+        #cat::before {
+            content: "🐱";
+            font-size: 30px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #cat.quantum {
+            box-shadow: 0 0 10px #9d4edd;
+        }
+        
+        #score {
+            font-size: 24px;
+            margin: 10px;
+            color: #f8f9fa;
+        }
+        
+        #timer {
+            font-size: 20px;
+            color: #f8f9fa;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #9d4edd;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        button:hover {
+            background-color: #7b2cbf;
+        }
+        
+        .box {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            border: 2px dashed #4a4e69;
+            border-radius: 5px;
+        }
+        
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(34, 34, 59, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>Cat Paradox</h1>
+        <p>Guide the quantum cat into the box... or boxes?</p>
+        <div id="gameArea">
+            <div id="cat"></div>
+            <div id="gameOver">
+                <h2>Game Over!</h2>
+                <p id="finalScore"></p>
+                <button onclick="startGame()">Play Again</button>
+            </div>
+        </div>
+        <div id="score">Score: 0</div>
+        <div id="timer">Time: 60s</div>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const cat = document.getElementById('cat');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const gameOverScreen = document.getElementById('gameOver');
+        
+        let score = 0;
+        let timeLeft = 60;
+        let gameInterval;
+        let boxes = [];
+        let isDragging = false;
+        let isQuantum = false;
+        let timer;
+
+        function startGame() {
+            // Reset game state
+            score = 0;
+            timeLeft = 60;
+            scoreDisplay.textContent = `Score: ${score}`;
+            timerDisplay.textContent = `Time: ${timeLeft}s`;
+            gameOverScreen.style.display = 'none';
+            
+            // Clear existing boxes
+            boxes.forEach(box => box.remove());
+            boxes = [];
+            
+            // Reset cat position
+            cat.style.left = '275px';
+            cat.style.top = '175px';
+            
+            // Start game loop
+            clearInterval(gameInterval);
+            gameInterval = setInterval(createBox, 3000);
+            
+            // Start timer
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `Time: ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function createBox() {
+            const box = document.createElement('div');
+            box.className = 'box';
+            
+            // Random position within game area
+            const maxX = gameArea.clientWidth - 60;
+            const maxY = gameArea.clientHeight - 60;
+            const randomX = Math.random() * maxX;
+            const randomY = Math.random() * maxY;
+            
+            box.style.left = `${randomX}px`;
+            box.style.top = `${randomY}px`;
+            
+            gameArea.appendChild(box);
+            boxes.push(box);
+            
+            // Remove box after 5 seconds
+            setTimeout(() => {
+                box.remove();
+                boxes = boxes.filter(b => b !== box);
+            }, 5000);
+        }
+
+        function checkCollision(cat, box) {
+            const catRect = cat.getBoundingClientRect();
+            const boxRect = box.getBoundingClientRect();
+            
+            return !(catRect.right < boxRect.left || 
+                    catRect.left > boxRect.right || 
+                    catRect.bottom < boxRect.top || 
+                    catRect.top > boxRect.bottom);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(timer);
+            gameOverScreen.style.display = 'block';
+            document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+        }
+
+        // Cat dragging mechanics
+        cat.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            cat.style.cursor = 'grabbing';
+            
+            // Toggle quantum state
+            isQuantum = !isQuantum;
+            cat.classList.toggle('quantum');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = gameArea.getBoundingClientRect();
+                let x = e.clientX - rect.left - 25;
+                let y = e.clientY - rect.top - 25;
+                
+                // Keep cat within bounds
+                x = Math.max(0, Math.min(x, gameArea.clientWidth - 50));
+                y = Math.max(0, Math.min(y, gameArea.clientHeight - 50));
+                
+                cat.style.left = `${x}px`;
+                cat.style.top = `${y}px`;
+                
+                // Check for collision with boxes
+                boxes.forEach(box => {
+                    if (checkCollision(cat, box)) {
+                        score += isQuantum ? 2 : 1;
+                        scoreDisplay.textContent = `Score: ${score}`;
+                        box.remove();
+                        boxes = boxes.filter(b => b !== box);
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            cat.style.cursor = 'pointer';
+        });
+    </script>
+</body>
+</html>
